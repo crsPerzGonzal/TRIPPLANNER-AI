@@ -1,0 +1,289 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: TripPlanner AI business API and DynamoDB persistence.
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: "http://localhost:5173,http://127.0.0.1:5173"
+    Description: Comma-separated exact frontend origins allowed by CORS; wildcards are not allowed.
+    AllowedPattern: "^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?(,https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?)*$"
+    ConstraintDescription: Provide exact HTTP or HTTPS origins separated by commas; wildcard origins are not allowed.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 10
+    MemorySize: 128
+    Environment:
+      Variables:
+        TRIPPLANNER_TABLE: !Ref TripPlannerTable
+        ALLOWED_ORIGINS: !Ref AllowedOrigin
+
+Resources:
+  TripPlannerUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+
+  TripPlannerUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref TripPlannerUserPool
+      ClientName: TripPlannerWeb
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      RefreshTokenValidity: 30
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      TokenValidityUnits:
+        RefreshToken: days
+        AccessToken: minutes
+        IdToken: minutes
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  BusinessApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      EndpointConfiguration: REGIONAL
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 10
+          ThrottlingBurstLimit: 20
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt TripPlannerUserPool.Arn
+            Identity:
+              Header: Authorization
+  TripPlannerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      SSESpecification:
+        SSEEnabled: true
+
+  TripsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/
+      Handler: lambdas.trips.handler.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:Query
+                - dynamodb:UpdateItem
+              Resource: !GetAtt TripPlannerTable.Arn
+      Events:
+        CreateTrip:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips
+            Method: POST
+        GetTrips:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips
+            Method: GET
+        GetTrip:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}
+            Method: GET
+        UpdateTrip:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}
+            Method: PATCH
+
+  ItinerariesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/
+      Handler: lambdas.itineraries.handler.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+              Resource: !GetAtt TripPlannerTable.Arn
+      Events:
+        GetItinerary:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}/itinerary
+            Method: GET
+        PutItinerary:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}/itinerary
+            Method: PUT
+
+  ReservationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/
+      Handler: lambdas.reservations.handler.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:Query
+                - dynamodb:UpdateItem
+              Resource: !GetAtt TripPlannerTable.Arn
+      Events:
+        CreateReservation:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}/reservations
+            Method: POST
+        GetReservations:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}/reservations
+            Method: GET
+        UpdateReservation:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}/reservations/{reservationId}
+            Method: PATCH
+
+  PreferencesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/
+      Handler: lambdas.preferences.handler.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+              Resource: !GetAtt TripPlannerTable.Arn
+      Events:
+        GetPreferences:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /preferences
+            Method: GET
+        PutPreferences:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /preferences
+            Method: PUT
+
+  CorsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/
+      Handler: common.cors.lambda_handler
+      Events:
+        OptionsTrips:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        OptionsTrip:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        OptionsItinerary:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}/itinerary
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        OptionsReservations:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}/reservations
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        OptionsPreferences:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /preferences
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        OptionsReservation:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BusinessApi
+            Path: /trips/{tripId}/reservations/{reservationId}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+
+Outputs:
+  BusinessApiUrl:
+    Description: API Gateway endpoint for business operations.
+    Value: !Sub "https://${BusinessApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/prod/"
+  TripPlannerTableName:
+    Description: DynamoDB table storing user-scoped business records.
+    Value: !Ref TripPlannerTable
+  UserPoolId:
+    Description: Cognito User Pool for TripPlanner account registration and authentication.
+    Value: !Ref TripPlannerUserPool
+  UserPoolClientId:
+    Description: Public Cognito app client ID for the frontend; it has no client secret.
+    Value: !Ref TripPlannerUserPoolClient

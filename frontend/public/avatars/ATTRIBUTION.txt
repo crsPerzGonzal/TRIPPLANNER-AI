@@ -1,0 +1,11 @@
+brunette.glb
+
+This example avatar was created at Ready Player Me. The TalkingHead
+project identifies it as available for non-commercial use under
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+
+Source: https://github.com/met4citizen/TalkingHead/tree/main/avatars
+License: https://creativecommons.org/licenses/by-nc/4.0/
+
+This is a temporary prototype asset. Replace it with a model whose license
+is suitable for the final deployment before publishing the application.

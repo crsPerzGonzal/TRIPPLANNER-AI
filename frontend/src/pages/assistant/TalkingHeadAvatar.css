@@ -1,0 +1,218 @@
+.talking-head-card {
+  overflow: hidden;
+  padding: 17px;
+  background: linear-gradient(180deg, #fff 0%, #f5fbf9 100%);
+}
+
+.talking-head-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.talking-head-heading h3 {
+  margin: 5px 0 0;
+  color: #1e293b;
+  font-family: Manrope, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.4px;
+}
+
+.avatar-mode-badge {
+  padding: 6px 8px;
+  color: #0f766e;
+  background: #e5f7f3;
+  border-radius: 7px;
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.talking-head-stage {
+  position: relative;
+  height: 282px;
+  overflow: hidden;
+  margin-top: 12px;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(204, 251, 241, .82), transparent 49%),
+    linear-gradient(180deg, #edf9f6 0%, #f8fbfb 100%);
+  border: 1px solid #e1efec;
+  border-radius: 13px;
+}
+
+.talking-head-stage::after {
+  position: absolute;
+  right: 12%;
+  bottom: -34px;
+  left: 12%;
+  height: 70px;
+  background: rgba(15, 118, 110, .08);
+  border-radius: 50%;
+  content: '';
+}
+
+.avatar-orbit {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  border: 1px solid rgba(15, 118, 110, .11);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.avatar-orbit-outer {
+  width: 228px;
+  height: 228px;
+}
+
+.avatar-orbit-inner {
+  top: 46px;
+  width: 188px;
+  height: 188px;
+  border-style: dashed;
+  opacity: .7;
+}
+
+.talking-head-canvas {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.talking-head-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-stage-message {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: max-content;
+  max-width: calc(100% - 28px);
+  padding: 9px 11px;
+  color: #526274;
+  background: rgba(255,255,255,.94);
+  border: 1px solid #e0ebe9;
+  border-radius: 8px;
+  font-size: 10px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.avatar-stage-error {
+  color: #7f1d1d;
+  background: #fff7f7;
+  border-color: #fecaca;
+}
+
+.avatar-mood-indicator {
+  position: absolute;
+  z-index: 3;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  color: #526274;
+  background: rgba(255,255,255,.92);
+  border: 1px solid #e4ecea;
+  border-radius: 7px;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.avatar-mood-indicator > span {
+  width: 6px;
+  height: 6px;
+  background: #0f766e;
+  border-radius: 50%;
+}
+
+.avatar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.avatar-controls > span {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.mood-switch {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: #edf4f3;
+  border-radius: 8px;
+}
+
+.mood-switch button {
+  min-height: 29px;
+  padding: 0 8px;
+  color: #64748b;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.mood-switch button.selected {
+  color: #0f766e;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(30, 41, 59, .1);
+}
+
+.mood-switch button:disabled {
+  opacity: .55;
+}
+
+.avatar-disclaimer {
+  margin: 10px 0 0;
+  color: #718196;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.font-large .avatar-mode-badge,
+.font-large .avatar-stage-message,
+.font-large .avatar-mood-indicator,
+.font-large .avatar-controls > span,
+.font-large .mood-switch button,
+.font-large .avatar-disclaimer {
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .talking-head-stage {
+    height: 320px;
+  }
+
+  .avatar-orbit-outer {
+    width: 255px;
+    height: 255px;
+  }
+
+  .avatar-orbit-inner {
+    width: 210px;
+    height: 210px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-orbit-inner {
+    border-style: solid;
+  }
+}
